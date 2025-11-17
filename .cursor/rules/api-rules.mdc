@@ -1,0 +1,229 @@
+---
+description: This should be included whenever we make changes to the API or use the API in the electron app
+alwaysApply: false
+---
+
+# Electron IPC API Structure
+
+When adding new APIs for communication between the main and renderer processes, follow this structure to ensure consistency and maintainability.
+
+## Overview
+
+- **Main Process**: Handles the business logic. API handlers are located in `src/main/api/`.
+- **Shared Types**: API constants, parameter types, and return types are defined in `src/shared/`.
+- **Preload Script**: Acts as a secure bridge, exposing main process APIs to the renderer. This is located at `src/preload/index.ts`.
+- **Renderer Process**: The UI, which calls the APIs exposed by the preload script.
+
+## IPC Channel Naming
+
+IPC channels must be named using the format `domain:action`.
+
+- **domain**: A noun that represents a feature area (e.g., `git`, `files`, `settings`).
+- **action**: A verb describing the operation (e.g., `getBranches`, `readFile`, `save`).
+
+Examples: `git:getBranches`, `files:readFile`.
+
+## ⚠️ CRITICAL: Always Use Shared Types
+
+**NEVER use inline types in API handlers.** Always import and use the shared parameter types.
+
+```typescript
+// ❌ WRONG - inline type
+ipcMain.handle(
+  API.SOME_ACTION,
+  async (event, { param1, param2 }: { param1: string; param2: number }) => {
+    // ...
+  }
+)
+
+// ✅ CORRECT - shared type
+import { SomeActionParams } from '@shared/domain'
+ipcMain.handle(API.SOME_ACTION, async (event, params: SomeActionParams) => {
+  // Access via params.param1, params.param2
+})
+```
+
+## 1. Shared Types (`/src/shared`)
+
+Create a file matching the domain name in the shared folder (e.g., `src/shared/git.ts` for the `git` domain) that defines:
+
+1. API channel constants
+2. Parameter types for each API
+3. Return types for each API
+
+```typescript
+// src/shared/git.ts
+
+// API channel constants
+export const GIT_API = {
+  GET_BRANCHES: 'git:getBranches',
+  GET_STATUS: 'git:getStatus'
+} as const
+
+// Parameter types
+export type GetBranchesParams = {
+  repoPath: string
+}
+export type GetStatusParams = {
+  repoPath: string
+}
+
+// Return types
+export type GetBranchesReturn = string[]
+export type GetStatusReturn = {
+  modified: string[]
+  staged: string[]
+}
+
+// Optional: API type map for advanced type safety
+export type GitApiMap = {
+  [GIT_API.GET_BRANCHES]: {
+    params: GetBranchesParams
+    return: GetBranchesReturn
+  }
+  [GIT_API.GET_STATUS]: {
+    params: GetStatusParams
+    return: GetStatusReturn
+  }
+}
+```
+
+## 2. Main Process (`/src/main`)
+
+1. Create or find the relevant domain file in `src/main/api/`. For a `git` domain, this would be `src/main/api/git.ts`.
+2. **Import BOTH the API constants AND parameter types** from the shared folder.
+3. Export a function `register<Domain>Api(ipcMain)` that registers all `ipcMain.handle` listeners for that domain.
+
+```typescript
+// src/main/api/git.ts
+import { GIT_API, GetBranchesParams, GetStatusParams } from '@shared/git'
+
+export function registerGitApi(ipcMain: Electron.IpcMain): void {
+  // ✅ CORRECT - using shared parameter types
+  ipcMain.handle(GIT_API.GET_BRANCHES, async (event, params: GetBranchesParams) => {
+    const branches = await getSomeBranches(params.repoPath)
+    return branches
+  })
+
+  ipcMain.handle(GIT_API.GET_STATUS, async (event, params: GetStatusParams) => {
+    const status = await getGitStatus(params.repoPath)
+    return { modified: status.modified, staged: status.staged }
+  })
+}
+```
+
+3. In the main entry point `src/main/index.ts`, import and call the registration function inside the `app.whenReady()` block.
+
+```typescript
+// src/main/index.ts
+import { registerGitApi } from './api/git'
+
+app.whenReady().then(() => {
+  //...
+  registerGitApi(ipcMain)
+  //...
+})
+```
+
+## 3. Preload Script (`/src/preload`)
+
+1. Open `src/preload/index.ts`.
+2. Import the API constants and types from the shared folder.
+3. Add a new property to the `api` object that is exposed to the renderer.
+4. Use the imported types for full type safety.
+
+```typescript
+// src/preload/index.ts
+import { contextBridge, ipcRenderer } from 'electron'
+import {
+  GIT_API,
+  GetBranchesParams,
+  GetBranchesReturn,
+  GetStatusParams,
+  GetStatusReturn
+} from '../shared/git'
+
+export const api = {
+  // ... existing domains
+  git: {
+    getBranches: (params: GetBranchesParams): Promise<GetBranchesReturn> =>
+      ipcRenderer.invoke(GIT_API.GET_BRANCHES, params),
+    getStatus: (params: GetStatusParams): Promise<GetStatusReturn> =>
+      ipcRenderer.invoke(GIT_API.GET_STATUS, params)
+  }
+}
+
+contextBridge.exposeInMainWorld('api', api)
+```
+
+4. The types are automatically exposed to the renderer via `src/preload/index.d.ts`. Ensure it's set up to infer types from the `api` object.
+
+```typescript
+// src/preload/index.d.ts
+import type { api } from './index'
+
+declare global {
+  interface Window {
+    api: typeof api
+  }
+}
+```
+
+## 4. Renderer Process (`/src/renderer`)
+
+In your renderer components, you can now call the API in a type-safe way:
+
+```typescript
+const branches = await window.api.git.getBranches({ repoPath: '/path/to/repo' })
+const status = await window.api.git.getStatus({ repoPath: '/path/to/repo' })
+```
+
+## Common Mistakes to Avoid
+
+### ❌ Inline Types in Main Process
+
+```typescript
+// WRONG - inline parameter type
+ipcMain.handle(API.ADD_REPO, async (event, { name, path }: { name: string; path: string }) => {
+  // ...
+})
+```
+
+### ✅ Shared Types in Main Process
+
+```typescript
+// CORRECT - shared parameter type
+import { AddRepoParams } from '@shared/app'
+ipcMain.handle(API.ADD_REPO, async (event, params: AddRepoParams) => {
+  // Access via params.name, params.path
+})
+```
+
+### ❌ Extracting Individual Properties in Preload
+
+```typescript
+// WRONG - extracting individual properties
+getBranches: (repoPath: GetBranchesParams['repoPath']): Promise<GetBranchesReturn> =>
+  ipcRenderer.invoke(API.GET_BRANCHES, { repoPath })
+```
+
+### ✅ Using Full Params Object in Preload
+
+```typescript
+// CORRECT - using full params object for consistency
+getBranches: (params: GetBranchesParams): Promise<GetBranchesReturn> =>
+  ipcRenderer.invoke(API.GET_BRANCHES, params)
+```
+
+## Benefits of This Structure
+
+1. **Type Safety**: All API calls are fully typed from end to end
+2. **Single Source of Truth**: API channel names and types are defined once in the shared folder
+3. **Easy to Find**: File names in shared match the API domain files
+4. **Refactoring**: Changing an API channel name or types updates everywhere automatically
+5. **IntelliSense**: Full autocomplete support in VS Code/Cursor
+6. **No Inline Types**: Prevents type duplication and ensures consistency
+
+## Other notes
+
+- for git related API's you have the simple-git library available.
