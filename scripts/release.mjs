@@ -268,17 +268,7 @@ async function main() {
     run(`git commit -m "Bump version to ${newVersion}"`)
   }
 
-  // Create tag
-  const tag = `v${newVersion}`
-
-  if (tagExists(tag)) {
-    console.log(chalk.yellow(`⚠️  Tag ${tag} already exists, will overwrite release...`))
-  } else {
-    console.log(chalk.cyan(`🏷️  Creating tag ${tag}...`))
-    run(`git tag ${tag}`)
-  }
-
-  // Build
+  // Build BEFORE creating tag (so we can fail early)
   console.log(chalk.cyan('\n🔨 Building app...\n'))
   run('pnpm run build')
 
@@ -300,10 +290,15 @@ async function main() {
 
   console.log(chalk.green('\n✅ Build completed successfully!\n'))
 
-  // Create GitHub release
-  console.log(chalk.cyan('📤 Creating GitHub release...\n'))
+  // Now that build succeeded, push commits and create tag
+  const tag = `v${newVersion}`
 
-  // Delete existing release if it exists
+  if (newVersion !== currentVersion) {
+    console.log(chalk.cyan('📌 Pushing version bump to GitHub...'))
+    run('git push origin main')
+  }
+
+  // Delete existing release if it exists (before creating tag)
   try {
     run(`gh release view ${tag}`, { silent: true, ignoreError: true })
     console.log(chalk.yellow(`Deleting existing release ${tag}...`))
@@ -312,7 +307,19 @@ async function main() {
     // Release doesn't exist, that's fine
   }
 
-  // Create release
+  // Create and push tag
+  if (tagExists(tag)) {
+    console.log(chalk.yellow(`⚠️  Tag ${tag} already exists locally, deleting...`))
+    run(`git tag -d ${tag}`)
+  }
+
+  console.log(chalk.cyan(`🏷️  Creating and pushing tag ${tag}...`))
+  run(`git tag ${tag}`)
+  run(`git push origin ${tag}`)
+
+  // Create GitHub release (tag now exists on remote)
+  console.log(chalk.cyan('\n📤 Creating GitHub release...\n'))
+
   const draftFlag = releaseAnswer.draft ? '--draft' : ''
   const repoName = process.env.VITE_PUBLISH_REPO
   const releaseCmd =
@@ -324,16 +331,6 @@ async function main() {
     `"dist/latest-mac.yml"`
 
   run(releaseCmd)
-
-  // Push tag
-  console.log(chalk.cyan('\n📌 Pushing tag to GitHub...'))
-  run(`git push origin ${tag} --force`)
-
-  // Push commit if version was bumped
-  if (newVersion !== currentVersion) {
-    console.log(chalk.cyan('📌 Pushing commits to GitHub...'))
-    run('git push origin main')
-  }
 
   // Success!
   const releaseUrl = `https://github.com/${process.env.VITE_PUBLISH_OWNER}/${process.env.VITE_PUBLISH_REPO}/releases/tag/${tag}`
