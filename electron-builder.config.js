@@ -40,15 +40,10 @@ module.exports = {
           "Application requests access to the user's Downloads folder."
       }
     ],
-    notarize: false
+    notarize: true
   },
   dmg: {
     artifactName: '${name}-${version}.${ext}'
-  },
-  linux: {
-    target: ['AppImage', 'snap', 'deb'],
-    maintainer: 'electronjs.org',
-    category: 'Utility'
   },
   appImage: {
     artifactName: '${name}-${version}.${ext}'

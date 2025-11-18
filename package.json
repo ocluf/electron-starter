@@ -16,7 +16,7 @@
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:mac": "electron-vite build && electron-builder --mac"
+    "build:mac": "dotenv -e .env -- sh -c 'electron-vite build && electron-builder --mac'"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
@@ -31,6 +31,7 @@
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.3",
+    "dotenv-cli": "^11.0.0",
     "electron": "^38.1.2",
     "electron-builder": "^25.1.8",
     "electron-vite": "^4.0.1",
