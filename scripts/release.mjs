@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execSync } from 'child_process'
+import { loadEnvFile } from 'node:process'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -40,7 +41,7 @@ function commandExists(cmd) {
 }
 
 // Load and validate .env
-function loadEnv() {
+function validateEnv() {
   const envPath = path.join(__dirname, '..', '.env')
 
   if (!fs.existsSync(envPath)) {
@@ -50,19 +51,8 @@ function loadEnv() {
     process.exit(1)
   }
 
-  // Parse .env file manually
-  const envContent = fs.readFileSync(envPath, 'utf8')
-  const env = {}
-
-  envContent.split('\n').forEach((line) => {
-    const trimmed = line.trim()
-    if (trimmed && !trimmed.startsWith('#')) {
-      const [key, ...valueParts] = trimmed.split('=')
-      if (key && valueParts.length > 0) {
-        env[key.trim()] = valueParts.join('=').trim()
-      }
-    }
-  })
+  // Load .env using Node's built-in support
+  loadEnvFile(envPath)
 
   const required = [
     'APPLE_ID',
@@ -74,7 +64,7 @@ function loadEnv() {
     'VITE_PUBLISH_REPO'
   ]
 
-  const missing = required.filter((key) => !env[key])
+  const missing = required.filter((key) => !process.env[key])
 
   if (missing.length > 0) {
     console.error(chalk.red('❌ Error: Missing required environment variables:'))
@@ -82,8 +72,6 @@ function loadEnv() {
     console.log(chalk.yellow('\nPlease add these to your .env file.\n'))
     process.exit(1)
   }
-
-  return env
 }
 
 // Get current version from package.json
@@ -161,7 +149,7 @@ async function main() {
   console.log(chalk.green('✓ Git working directory clean'))
 
   // Check .env
-  const env = loadEnv()
+  validateEnv()
   console.log(chalk.green('✓ Environment variables loaded'))
 
   // Check gh CLI
@@ -295,14 +283,14 @@ async function main() {
   run('pnpm run build')
 
   console.log(chalk.cyan('\n🔐 Building, signing, and notarizing...\n'))
-  console.log(chalk.yellow('⏳ This will take several minutes (Apple notarization is slow)\n'))
+  console.log(chalk.yellow('⏳ This can take several minutes (Apple notarization is slow)\n'))
 
   // Build with electron-builder
   run('pnpm exec dotenv -e .env -- pnpm exec electron-builder --mac --arm64 --publish never')
 
   // Verify build artifacts
   const distPath = path.join(__dirname, '..', 'dist')
-  const dmgFile = `${env.VITE_PUBLISH_REPO}-${newVersion}-arm64.dmg`
+  const dmgFile = `${process.env.VITE_PUBLISH_REPO}-${newVersion}-arm64.dmg`
   const dmgPath = path.join(distPath, dmgFile)
 
   if (!fs.existsSync(dmgPath)) {
@@ -326,12 +314,13 @@ async function main() {
 
   // Create release
   const draftFlag = releaseAnswer.draft ? '--draft' : ''
+  const repoName = process.env.VITE_PUBLISH_REPO
   const releaseCmd =
     `gh release create ${tag} ${draftFlag} --title "${tag}" --generate-notes ` +
-    `"dist/${env.VITE_PUBLISH_REPO}-${newVersion}-arm64.dmg" ` +
-    `"dist/${env.VITE_PUBLISH_REPO}-${newVersion}-arm64.dmg.blockmap" ` +
-    `"dist/${env.VITE_PUBLISH_REPO}-${newVersion}-arm64-mac.zip" ` +
-    `"dist/${env.VITE_PUBLISH_REPO}-${newVersion}-arm64-mac.zip.blockmap" ` +
+    `"dist/${repoName}-${newVersion}-arm64.dmg" ` +
+    `"dist/${repoName}-${newVersion}-arm64.dmg.blockmap" ` +
+    `"dist/${repoName}-${newVersion}-arm64-mac.zip" ` +
+    `"dist/${repoName}-${newVersion}-arm64-mac.zip.blockmap" ` +
     `"dist/latest-mac.yml"`
 
   run(releaseCmd)
@@ -347,7 +336,7 @@ async function main() {
   }
 
   // Success!
-  const releaseUrl = `https://github.com/${env.VITE_PUBLISH_OWNER}/${env.VITE_PUBLISH_REPO}/releases/tag/${tag}`
+  const releaseUrl = `https://github.com/${process.env.VITE_PUBLISH_OWNER}/${process.env.VITE_PUBLISH_REPO}/releases/tag/${tag}`
 
   console.log(chalk.green.bold('\n🎉 Release created successfully!\n'))
   console.log(chalk.white(`   Version: ${chalk.bold(newVersion)}`))
