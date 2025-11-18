@@ -9,8 +9,8 @@ When adding new APIs for communication between the main and renderer processes, 
 
 ## Overview
 
-- **Main Process**: Handles the business logic. API handlers are located in `src/main/api/`.
-- **Shared Types**: API constants, parameter types, and return types are defined in `src/shared/`.
+- **Main Process**: Handles the business logic. API handlers are located in `src/main/handlers/`.
+- **Common Types**: API constants, parameter types, and return types are defined in `src/common/`.
 - **Preload Script**: Acts as a secure bridge, exposing main process APIs to the renderer. This is located at `src/preload/index.ts`.
 - **Renderer Process**: The UI, which calls the APIs exposed by the preload script.
 
@@ -23,9 +23,9 @@ IPC channels must be named using the format `domain:action`.
 
 Examples: `git:getBranches`, `files:readFile`.
 
-## ⚠️ CRITICAL: Always Use Shared Types
+## ⚠️ CRITICAL: Always Use Common Types
 
-**NEVER use inline types in API handlers.** Always import and use the shared parameter types.
+**NEVER use inline types in API handlers.** Always import and use the common parameter types.
 
 ```typescript
 // ❌ WRONG - inline type
@@ -36,23 +36,23 @@ ipcMain.handle(
   }
 )
 
-// ✅ CORRECT - shared type
-import { SomeActionParams } from '@shared/domain'
+// ✅ CORRECT - common type
+import { SomeActionParams } from '../../common/domain'
 ipcMain.handle(API.SOME_ACTION, async (event, params: SomeActionParams) => {
   // Access via params.param1, params.param2
 })
 ```
 
-## 1. Shared Types (`/src/shared`)
+## 1. Common Types (`/src/common`)
 
-Create a file matching the domain name in the shared folder (e.g., `src/shared/git.ts` for the `git` domain) that defines:
+Create a file matching the domain name in the common folder (e.g., `src/common/git.ts` for the `git` domain) that defines:
 
 1. API channel constants
 2. Parameter types for each API
 3. Return types for each API
 
 ```typescript
-// src/shared/git.ts
+// src/common/git.ts
 
 // API channel constants
 export const GIT_API = {
@@ -90,13 +90,13 @@ export type GitApiMap = {
 
 ## 2. Main Process (`/src/main`)
 
-1. Create or find the relevant domain file in `src/main/api/`. For a `git` domain, this would be `src/main/api/git.ts`.
-2. **Import BOTH the API constants AND parameter types** from the shared folder.
+1. Create or find the relevant domain file in `src/main/handlers/`. For a `git` domain, this would be `src/main/handlers/git.ts`.
+2. **Import BOTH the API constants AND parameter types** from the common folder.
 3. Export a function `register<Domain>Api(ipcMain)` that registers all `ipcMain.handle` listeners for that domain.
 
 ```typescript
-// src/main/api/git.ts
-import { GIT_API, GetBranchesParams, GetStatusParams } from '@shared/git'
+// src/main/handlers/git.ts
+import { GIT_API, GetBranchesParams, GetStatusParams } from '../../common/git'
 
 export function registerGitApi(ipcMain: Electron.IpcMain): void {
   // ✅ CORRECT - using shared parameter types
@@ -116,7 +116,7 @@ export function registerGitApi(ipcMain: Electron.IpcMain): void {
 
 ```typescript
 // src/main/index.ts
-import { registerGitApi } from './api/git'
+import { registerGitApi } from './handlers/git'
 
 app.whenReady().then(() => {
   //...
@@ -128,7 +128,7 @@ app.whenReady().then(() => {
 ## 3. Preload Script (`/src/preload`)
 
 1. Open `src/preload/index.ts`.
-2. Import the API constants and types from the shared folder.
+2. Import the API constants and types from the common folder.
 3. Add a new property to the `api` object that is exposed to the renderer.
 4. Use the imported types for full type safety.
 
@@ -141,7 +141,7 @@ import {
   GetBranchesReturn,
   GetStatusParams,
   GetStatusReturn
-} from '../shared/git'
+} from '../common/git'
 
 export const api = {
   // ... existing domains
@@ -189,11 +189,11 @@ ipcMain.handle(API.ADD_REPO, async (event, { name, path }: { name: string; path:
 })
 ```
 
-### ✅ Shared Types in Main Process
+### ✅ Common Types in Main Process
 
 ```typescript
-// CORRECT - shared parameter type
-import { AddRepoParams } from '@shared/app'
+// CORRECT - common parameter type
+import { AddRepoParams } from '../../common/app'
 ipcMain.handle(API.ADD_REPO, async (event, params: AddRepoParams) => {
   // Access via params.name, params.path
 })
@@ -218,8 +218,8 @@ getBranches: (params: GetBranchesParams): Promise<GetBranchesReturn> =>
 ## Benefits of This Structure
 
 1. **Type Safety**: All API calls are fully typed from end to end
-2. **Single Source of Truth**: API channel names and types are defined once in the shared folder
-3. **Easy to Find**: File names in shared match the API domain files
+2. **Single Source of Truth**: API channel names and types are defined once in the common folder
+3. **Easy to Find**: File names in common match the API domain files
 4. **Refactoring**: Changing an API channel name or types updates everywhere automatically
 5. **IntelliSense**: Full autocomplete support in VS Code/Cursor
 6. **No Inline Types**: Prevents type duplication and ensures consistency
