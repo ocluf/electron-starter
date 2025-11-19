@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import { execSync } from 'child_process'
 import { loadEnvFile } from 'node:process'
@@ -12,7 +13,12 @@ import chalk from 'chalk'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Helper to run commands
+/**
+ * Helper to run shell commands
+ * @param {string} cmd - Command to execute
+ * @param {object} options - Execution options
+ * @returns {string} Command output
+ */
 function run(cmd, options = {}) {
   try {
     return execSync(cmd, {
@@ -30,7 +36,11 @@ function run(cmd, options = {}) {
   }
 }
 
-// Check if command exists
+/**
+ * Check if a command exists in PATH
+ * @param {string} cmd - Command to check
+ * @returns {boolean} True if command exists
+ */
 function commandExists(cmd) {
   try {
     execSync(`which ${cmd}`, { stdio: 'ignore' })
@@ -40,7 +50,10 @@ function commandExists(cmd) {
   }
 }
 
-// Load and validate .env
+/**
+ * Load and validate environment variables from .env file
+ * @returns {void}
+ */
 function validateEnv() {
   const envPath = path.join(__dirname, '..', '.env')
 
@@ -74,23 +87,36 @@ function validateEnv() {
   }
 }
 
-// Get package.json data
+/**
+ * Get package.json data
+ * @returns {object} Parsed package.json
+ */
 function getPackageJson() {
   const pkgPath = path.join(__dirname, '..', 'package.json')
   return JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
 }
 
-// Get current version from package.json
+/**
+ * Get current version from package.json
+ * @returns {string} Current version
+ */
 function getCurrentVersion() {
   return getPackageJson().version
 }
 
-// Get package name from package.json
+/**
+ * Get package name from package.json
+ * @returns {string} Package name
+ */
 function getPackageName() {
   return getPackageJson().name
 }
 
-// Update package.json version
+/**
+ * Update package.json version
+ * @param {string} newVersion - New version to set
+ * @returns {void}
+ */
 function updateVersion(newVersion) {
   const pkgPath = path.join(__dirname, '..', 'package.json')
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
@@ -98,7 +124,12 @@ function updateVersion(newVersion) {
   fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
 }
 
-// Bump version
+/**
+ * Bump version number based on type
+ * @param {string} current - Current version (e.g., "1.0.0")
+ * @param {string} type - Bump type: "patch", "minor", or "major"
+ * @returns {string} New version
+ */
 function bumpVersion(current, type) {
   const parts = current.split('.').map(Number)
 
@@ -120,7 +151,10 @@ function bumpVersion(current, type) {
   return parts.join('.')
 }
 
-// Check git status
+/**
+ * Check git status for uncommitted changes
+ * @returns {void}
+ */
 function checkGitStatus() {
   try {
     const status = run('git status --porcelain', { silent: true })
@@ -131,13 +165,17 @@ function checkGitStatus() {
       )
       process.exit(1)
     }
-  } catch (error) {
+  } catch {
     console.error(chalk.red('❌ Error: Not a git repository'))
     process.exit(1)
   }
 }
 
-// Check if tag exists
+/**
+ * Check if a git tag exists locally
+ * @param {string} tag - Tag name to check
+ * @returns {boolean} True if tag exists
+ */
 function tagExists(tag) {
   try {
     run(`git rev-parse ${tag}`, { silent: true, ignoreError: true })
@@ -147,6 +185,10 @@ function tagExists(tag) {
   }
 }
 
+/**
+ * Main release flow
+ * @returns {Promise<void>}
+ */
 async function main() {
   console.log(chalk.green.bold('\n🚀 Electron Release Script\n'))
 
