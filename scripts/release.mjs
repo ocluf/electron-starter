@@ -282,7 +282,7 @@ async function main() {
   run('pnpm run build')
 
   console.log(chalk.cyan('\n🔐 Building, signing, and notarizing...\n'))
-  console.log(chalk.yellow('⏳ This can take several minutes (Apple notarization is slow)\n'))
+  console.log(chalk.yellow('⏳ This can take several minutes (signing and notarization is slow)\n'))
 
   // Build with electron-builder
   run('pnpm exec dotenv -e .env -- pnpm exec electron-builder --mac --arm64 --publish never')
@@ -343,8 +343,6 @@ async function main() {
   run(releaseCmd)
 
   // Success!
-  const releaseUrl = `https://github.com/${process.env.VITE_PUBLISH_OWNER}/${process.env.VITE_PUBLISH_REPO}/releases/tag/${tag}`
-
   console.log(chalk.green.bold('\n🎉 Release created successfully!\n'))
   console.log(chalk.white(`   Version: ${chalk.bold(newVersion)}`))
   console.log(
@@ -352,10 +350,16 @@ async function main() {
       `   Status: ${releaseAnswer.draft ? chalk.yellow('Draft') : chalk.green('Published')}`
     )
   )
-  console.log(chalk.white(`   URL: ${chalk.blue(releaseUrl)}\n`))
 
   if (releaseAnswer.draft) {
-    console.log(chalk.yellow('💡 Remember to publish your draft release when ready!\n'))
+    const draftsUrl = `https://github.com/${process.env.VITE_PUBLISH_OWNER}/${process.env.VITE_PUBLISH_REPO}/releases`
+    console.log(chalk.white(`   View draft: ${chalk.blue(draftsUrl)}\n`))
+    console.log(
+      chalk.yellow('💡 Your draft is ready! Edit and publish it from the releases page.\n')
+    )
+  } else {
+    const releaseUrl = `https://github.com/${process.env.VITE_PUBLISH_OWNER}/${process.env.VITE_PUBLISH_REPO}/releases/tag/${tag}`
+    console.log(chalk.white(`   URL: ${chalk.blue(releaseUrl)}\n`))
   }
 }
 
