@@ -1,28 +1,18 @@
 import { useState } from 'react'
-import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
+import { Button } from './components/ui/button'
 
 function App(): React.JSX.Element {
-  const [response, setResponse] = useState<string>('')
+  const [appInfo, setAppInfo] = useState<string>('')
+  const [greeting, setGreeting] = useState<string>('')
 
   const handleGetInfo = async (): Promise<void> => {
     const info = await window.api.app.getAppInfo({
       includeVersions: true,
       includePlatform: true
     })
-    const message = `App: ${info.appName}\nPlatform: ${info.platform}\nElectron: ${info.versions?.electron}`
-    setResponse(message)
-    console.log('App info:', info)
-  }
-
-  const handleCalculate = async (): Promise<void> => {
-    const result = await window.api.app.calculate({
-      operation: 'multiply',
-      a: 7,
-      b: 6
-    })
-    setResponse(result.expression)
-    console.log('Calculation:', result)
+    const message = `${info.appName} • ${info.platform} • Electron ${info.versions?.electron}`
+    setAppInfo(message)
   }
 
   const handleGreet = async (): Promise<void> => {
@@ -30,59 +20,69 @@ function App(): React.JSX.Element {
       name: 'Developer',
       timeOfDay: 'morning'
     })
-    setResponse(greeting.greeting)
-    console.log('Greeting:', greeting)
+    setGreeting(greeting.greeting)
   }
 
   return (
-    <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 flex items-center justify-center p-8">
+      <div className="w-full max-w-2xl space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <img
+              className="w-20 h-20 animate-[spin_8s_linear_infinite]"
+              alt="Electron logo"
+              src={electronLogo}
+            />
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight">Electron + React</h1>
+          <p className="text-muted-foreground text-lg">
+            IPC API Examples with Tailwind & shadcn/ui
+          </p>
+        </div>
+
+        {/* API Demo Cards */}
+        <div className="space-y-4">
+          {/* App Info Card */}
+          <div className="border rounded-lg p-6 bg-card shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-2 flex-1">
+                <h3 className="font-semibold text-lg">System Information</h3>
+                <p className="text-sm text-muted-foreground">
+                  Get app name, platform, and Electron version
+                </p>
+                {appInfo && (
+                  <div className="mt-3 p-3 bg-muted rounded-md">
+                    <code className="text-sm text-foreground">{appInfo}</code>
+                  </div>
+                )}
+              </div>
+              <Button onClick={handleGetInfo} variant="outline">
+                Get Info
+              </Button>
+            </div>
+          </div>
+
+          {/* Greeting Card */}
+          <div className="border rounded-lg p-6 bg-card shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-2 flex-1">
+                <h3 className="font-semibold text-lg">Greeting</h3>
+                <p className="text-sm text-muted-foreground">Get a personalized greeting message</p>
+                {greeting && (
+                  <div className="mt-3 p-3 bg-muted rounded-md">
+                    <code className="text-sm text-foreground">{greeting}</code>
+                  </div>
+                )}
+              </div>
+              <Button onClick={handleGreet} variant="outline">
+                Greet
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={handleGetInfo}>
-            Get App Info
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={handleCalculate}>
-            Calculate 7 × 6
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={handleGreet}>
-            Greet User
-          </a>
-        </div>
-      </div>
-      {response && (
-        <div
-          style={{
-            marginTop: '20px',
-            padding: '10px',
-            background: '#222',
-            color: '#fff',
-            borderRadius: '5px',
-            whiteSpace: 'pre-line'
-          }}
-        >
-          <strong>Response:</strong> {response}
-        </div>
-      )}
-      <Versions></Versions>
-    </>
+    </div>
   )
 }
 

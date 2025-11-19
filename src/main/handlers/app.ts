@@ -1,5 +1,5 @@
 import { IpcMain } from 'electron'
-import { APP_API, GetAppInfoParams, CalculateParams, GreetUserParams } from '../../common/app'
+import { APP_API, GetAppInfoParams, GreetUserParams } from '../../common/app'
 
 export function registerAppApi(ipcMain: IpcMain): void {
   ipcMain.handle(APP_API.GET_APP_INFO, async (_event, params: GetAppInfoParams) => {
@@ -24,34 +24,6 @@ export function registerAppApi(ipcMain: IpcMain): void {
     }
 
     return info
-  })
-
-  ipcMain.handle(APP_API.CALCULATE, async (_event, params: CalculateParams) => {
-    let result: number
-
-    switch (params.operation) {
-      case 'add':
-        result = params.a + params.b
-        break
-      case 'subtract':
-        result = params.a - params.b
-        break
-      case 'multiply':
-        result = params.a * params.b
-        break
-      case 'divide':
-        if (params.b === 0) {
-          throw new Error('Division by zero')
-        }
-        result = params.a / params.b
-        break
-    }
-
-    return {
-      operation: params.operation,
-      result,
-      expression: `${params.a} ${params.operation} ${params.b} = ${result}`
-    }
   })
 
   ipcMain.handle(APP_API.GREET_USER, async (_event, params: GreetUserParams) => {

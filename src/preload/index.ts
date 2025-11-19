@@ -4,8 +4,6 @@ import {
   APP_API,
   GetAppInfoParams,
   GetAppInfoReturn,
-  CalculateParams,
-  CalculateReturn,
   GreetUserParams,
   GreetUserReturn
 } from '../common/app'
@@ -15,8 +13,6 @@ export const api = {
   app: {
     getAppInfo: (params: GetAppInfoParams): Promise<GetAppInfoReturn> =>
       ipcRenderer.invoke(APP_API.GET_APP_INFO, params),
-    calculate: (params: CalculateParams): Promise<CalculateReturn> =>
-      ipcRenderer.invoke(APP_API.CALCULATE, params),
     greetUser: (params: GreetUserParams): Promise<GreetUserReturn> =>
       ipcRenderer.invoke(APP_API.GREET_USER, params)
   }
