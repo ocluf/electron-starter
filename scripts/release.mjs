@@ -74,11 +74,20 @@ function validateEnv() {
   }
 }
 
+// Get package.json data
+function getPackageJson() {
+  const pkgPath = path.join(__dirname, '..', 'package.json')
+  return JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+}
+
 // Get current version from package.json
 function getCurrentVersion() {
-  const pkgPath = path.join(__dirname, '..', 'package.json')
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
-  return pkg.version
+  return getPackageJson().version
+}
+
+// Get package name from package.json
+function getPackageName() {
+  return getPackageJson().name
 }
 
 // Update package.json version
@@ -280,7 +289,8 @@ async function main() {
 
   // Verify build artifacts
   const distPath = path.join(__dirname, '..', 'dist')
-  const dmgFile = `${process.env.VITE_PUBLISH_REPO}-${newVersion}-arm64.dmg`
+  const packageName = getPackageName()
+  const dmgFile = `${packageName}-${newVersion}-arm64.dmg`
   const dmgPath = path.join(distPath, dmgFile)
 
   if (!fs.existsSync(dmgPath)) {
@@ -321,13 +331,13 @@ async function main() {
   console.log(chalk.cyan('\n📤 Creating GitHub release...\n'))
 
   const draftFlag = releaseAnswer.draft ? '--draft' : ''
-  const repoName = process.env.VITE_PUBLISH_REPO
   const releaseCmd =
     `gh release create ${tag} ${draftFlag} --title "${tag}" --generate-notes ` +
-    `"dist/${repoName}-${newVersion}-arm64.dmg" ` +
-    `"dist/${repoName}-${newVersion}-arm64.dmg.blockmap" ` +
-    `"dist/${repoName}-${newVersion}-arm64-mac.zip" ` +
-    `"dist/${repoName}-${newVersion}-arm64-mac.zip.blockmap" ` +
+    `--repo "${process.env.VITE_PUBLISH_OWNER}/${process.env.VITE_PUBLISH_REPO}" ` +
+    `"dist/${packageName}-${newVersion}-arm64.dmg" ` +
+    `"dist/${packageName}-${newVersion}-arm64.dmg.blockmap" ` +
+    `"dist/${packageName}-${newVersion}-arm64-mac.zip" ` +
+    `"dist/${packageName}-${newVersion}-arm64-mac.zip.blockmap" ` +
     `"dist/latest-mac.yml"`
 
   run(releaseCmd)
