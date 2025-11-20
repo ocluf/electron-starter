@@ -32,4 +32,5 @@ $ pnpm build:mac
 # For Linux
 $ pnpm build:linux
 ```
+
 # electron-starter

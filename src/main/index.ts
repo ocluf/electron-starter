@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerAppApi } from './handlers/app'
+import { registerUpdaterApi } from './handlers/updater'
 
 function createWindow(): void {
   // Create the browser window.
@@ -52,6 +53,7 @@ app.whenReady().then(() => {
 
   // Register IPC APIs
   registerAppApi(ipcMain)
+  registerUpdaterApi(ipcMain)
 
   createWindow()
 
