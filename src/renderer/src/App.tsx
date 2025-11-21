@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import electronLogo from './assets/electron.svg'
 import { Button } from './components/ui/button'
+import { UpdatePopup } from './components/UpdatePopup'
+import { UpdateButton } from './components/UpdateButton'
 
-function App(): React.JSX.Element {
+const App = (): React.JSX.Element => {
   const [appInfo, setAppInfo] = useState<string>('')
   const [greeting, setGreeting] = useState<string>('')
 
@@ -25,6 +27,7 @@ function App(): React.JSX.Element {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 flex items-center justify-center p-8">
+      <UpdatePopup />
       <div className="w-full max-w-2xl space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
@@ -78,6 +81,19 @@ function App(): React.JSX.Element {
               <Button onClick={handleGreet} variant="outline">
                 Greet
               </Button>
+            </div>
+          </div>
+
+          {/* Update Card */}
+          <div className="border rounded-lg p-6 bg-card shadow-sm hover:shadow-md transition-shadow">
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg">App Updates</h3>
+              <p className="text-sm text-muted-foreground">
+                Manually check for and install updates
+              </p>
+              <div className="pt-2">
+                <UpdateButton />
+              </div>
             </div>
           </div>
         </div>
