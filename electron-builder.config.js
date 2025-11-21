@@ -1,7 +1,16 @@
+import { loadEnvFile } from 'node:process'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+// Load .env file
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+loadEnvFile(join(__dirname, '.env'))
+
 /**
  * @type {import('electron-builder').Configuration}
  */
-module.exports = {
+export default {
   appId: process.env.VITE_APP_ID,
   productName: process.env.VITE_PRODUCT_NAME,
   directories: {
