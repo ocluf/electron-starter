@@ -352,14 +352,14 @@ async function main() {
 
   // Delete existing release if it exists (before creating tag)
   try {
-    run(`gh release view ${tag}`, { silent: true, ignoreError: true })
-    console.log(chalk.yellow(`Deleting existing release ${tag}...`))
-    run(`gh release delete ${tag} -y`)
+    run(`gh release view ${tag}`, { silent: true })
+    console.log(chalk.yellow(`⚠️  Deleting existing release ${tag}...`))
+    run(`gh release delete ${tag} -y --cleanup-tag`)
   } catch {
     // Release doesn't exist, that's fine
   }
 
-  // Create and push tag
+  // Create and push tag (force push in case it exists remotely)
   if (tagExists(tag)) {
     console.log(chalk.yellow(`⚠️  Tag ${tag} already exists locally, deleting...`))
     run(`git tag -d ${tag}`)
@@ -367,22 +367,38 @@ async function main() {
 
   console.log(chalk.cyan(`🏷️  Creating and pushing tag ${tag}...`))
   run(`git tag ${tag}`)
-  run(`git push origin ${tag}`)
+  run(`git push origin ${tag} --force`)
 
   // Create GitHub release (tag now exists on remote)
   console.log(chalk.cyan('\n📤 Creating GitHub release...\n'))
 
   const draftFlag = releaseAnswer.draft ? '--draft' : ''
-  const releaseCmd =
-    `gh release create ${tag} ${draftFlag} --title "${tag}" --generate-notes ` +
-    `--repo "${process.env.VITE_PUBLISH_OWNER}/${process.env.VITE_PUBLISH_REPO}" ` +
-    `"dist/${packageName}-${newVersion}-arm64.dmg" ` +
-    `"dist/${packageName}-${newVersion}-arm64.dmg.blockmap" ` +
-    `"dist/${packageName}-${newVersion}-arm64-mac.zip" ` +
-    `"dist/${packageName}-${newVersion}-arm64-mac.zip.blockmap" ` +
-    `"dist/latest-mac.yml"`
 
-  run(releaseCmd)
+  // Create release without assets first
+  const createReleaseCmd =
+    `gh release create ${tag} ${draftFlag} --title "${tag}" --generate-notes ` +
+    `--repo "${process.env.VITE_PUBLISH_OWNER}/${process.env.VITE_PUBLISH_REPO}"`
+
+  run(createReleaseCmd)
+
+  // Upload assets one at a time to avoid timeout issues with large files
+  console.log(chalk.cyan('📦 Uploading release assets...\n'))
+
+  const assets = [
+    `"dist/latest-mac.yml"`,
+    `"dist/${packageName}-${newVersion}-arm64.dmg.blockmap"`,
+    `"dist/${packageName}-${newVersion}-arm64-mac.zip.blockmap"`,
+    `"dist/${packageName}-${newVersion}-arm64-mac.zip"`,
+    `"dist/${packageName}-${newVersion}-arm64.dmg"` // Upload largest file last
+  ]
+
+  for (const asset of assets) {
+    console.log(chalk.cyan(`  Uploading ${asset}...`))
+    run(
+      `gh release upload ${tag} ${asset} --clobber ` +
+        `--repo "${process.env.VITE_PUBLISH_OWNER}/${process.env.VITE_PUBLISH_REPO}"`
+    )
+  }
 
   // Success!
   console.log(chalk.green.bold('\n🎉 Release created successfully!\n'))
