@@ -5,11 +5,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
-    define: {
-      'process.env.VITE_PUBLISH_OWNER': JSON.stringify(process.env.VITE_PUBLISH_OWNER),
-      'process.env.VITE_PUBLISH_REPO': JSON.stringify(process.env.VITE_PUBLISH_REPO)
-    }
+    plugins: [externalizeDepsPlugin()]
   },
   preload: {
     plugins: [externalizeDepsPlugin()]
