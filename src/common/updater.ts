@@ -11,4 +11,5 @@ export type UpdateStatus =
   | { state: 'available'; version: string }
   | { state: 'downloading'; percent: number }
   | { state: 'ready'; version: string }
+  | { state: 'up-to-date'; version: string }
   | { state: 'error'; message: string }

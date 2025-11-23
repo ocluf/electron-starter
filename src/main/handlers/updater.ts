@@ -9,6 +9,7 @@ const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000
 class Updater {
   private status: UpdateStatus = { state: 'idle' }
   private checkInterval: NodeJS.Timeout | null = null
+  private upToDateTimeout: NodeJS.Timeout | null = null
 
   constructor() {
     this.init()
@@ -51,8 +52,21 @@ class Updater {
       }
     })
 
-    autoUpdater.on('update-not-available', () => {
-      this.status = { state: 'idle' }
+    autoUpdater.on('update-not-available', (info) => {
+      this.status = {
+        state: 'up-to-date',
+        version: info.version
+      }
+
+      // Reset to idle after 5 seconds
+      if (this.upToDateTimeout) {
+        clearTimeout(this.upToDateTimeout)
+      }
+      this.upToDateTimeout = setTimeout(() => {
+        if (this.status.state === 'up-to-date') {
+          this.status = { state: 'idle' }
+        }
+      }, 5000)
     })
 
     autoUpdater.on('error', (err) => {
@@ -119,6 +133,9 @@ class Updater {
   public destroy(): void {
     if (this.checkInterval) {
       clearInterval(this.checkInterval)
+    }
+    if (this.upToDateTimeout) {
+      clearTimeout(this.upToDateTimeout)
     }
   }
 }

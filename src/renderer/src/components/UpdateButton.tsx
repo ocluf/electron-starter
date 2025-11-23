@@ -93,6 +93,22 @@ export const UpdateButton = (): React.JSX.Element => {
     )
   }
 
+  // Up to date
+  if (status.state === 'up-to-date') {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-sm">
+          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <span className="text-muted-foreground">You&apos;re up to date (v{status.version})</span>
+        </div>
+        <Button onClick={handleCheck} variant="outline">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Check Again
+        </Button>
+      </div>
+    )
+  }
+
   // Error state
   if (status.state === 'error') {
     return (
