@@ -1,18 +1,9 @@
-import { loadEnvFile } from 'node:process'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
-
-// Load .env file
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-loadEnvFile(join(__dirname, '.env'))
-
 /**
  * @type {import('electron-builder').Configuration}
  */
 export default {
-  appId: process.env.VITE_APP_ID,
-  productName: process.env.VITE_PRODUCT_NAME,
+  appId: import.meta.env.VITE_APP_ID,
+  productName: import.meta.env.VITE_PRODUCT_NAME,
   directories: {
     buildResources: 'build'
   },
@@ -60,7 +51,7 @@ export default {
   npmRebuild: false,
   publish: {
     provider: 'github',
-    owner: process.env.VITE_PUBLISH_OWNER,
-    repo: process.env.VITE_PUBLISH_REPO
+    owner: import.meta.env.VITE_PUBLISH_OWNER,
+    repo: import.meta.env.VITE_PUBLISH_REPO
   }
 }

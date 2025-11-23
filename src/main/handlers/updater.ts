@@ -19,8 +19,8 @@ class Updater {
     autoUpdater.autoInstallOnAppQuit = false
 
     // Configure feed URL if env vars are present
-    const owner = process.env.VITE_PUBLISH_OWNER
-    const repo = process.env.VITE_PUBLISH_REPO
+    const owner = import.meta.env.VITE_PUBLISH_OWNER
+    const repo = import.meta.env.VITE_PUBLISH_REPO
 
     if (owner && repo) {
       autoUpdater.setFeedURL({
