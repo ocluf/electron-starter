@@ -20,6 +20,7 @@
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:mac": "dotenv -e .env -- sh -c 'electron-vite build && electron-builder --mac'",
+    "build:mac:unsigned": "npm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64 --publish never",
     "release": "node scripts/release.mjs"
   },
   "dependencies": {
