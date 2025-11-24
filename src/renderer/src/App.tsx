@@ -6,7 +6,6 @@ import { UpdateButton } from './components/UpdateButton'
 
 const App = (): React.JSX.Element => {
   const [appInfo, setAppInfo] = useState<string>('')
-  const [greeting, setGreeting] = useState<string>('')
 
   const handleGetInfo = async (): Promise<void> => {
     const info = await window.api.app.getAppInfo({
@@ -15,14 +14,6 @@ const App = (): React.JSX.Element => {
     })
     const message = `${info.appName} • ${info.platform} • Electron ${info.versions?.electron}`
     setAppInfo(message)
-  }
-
-  const handleGreet = async (): Promise<void> => {
-    const greeting = await window.api.app.greetUser({
-      name: 'Developer',
-      timeOfDay: 'morning'
-    })
-    setGreeting(greeting.greeting)
   }
 
   return (
@@ -62,24 +53,6 @@ const App = (): React.JSX.Element => {
               </div>
               <Button onClick={handleGetInfo} variant="outline">
                 Get Info
-              </Button>
-            </div>
-          </div>
-
-          {/* Greeting Card */}
-          <div className="border rounded-lg p-6 bg-card shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-2 flex-1">
-                <h3 className="font-semibold text-lg">Greeting</h3>
-                <p className="text-sm text-muted-foreground">Get a personalized greeting message</p>
-                {greeting && (
-                  <div className="mt-3 p-3 bg-muted rounded-md">
-                    <code className="text-sm text-foreground">{greeting}</code>
-                  </div>
-                )}
-              </div>
-              <Button onClick={handleGreet} variant="outline">
-                Greet
               </Button>
             </div>
           </div>

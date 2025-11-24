@@ -1,5 +1,5 @@
 import { IpcMain } from 'electron'
-import { APP_API, GetAppInfoParams, GreetUserParams } from '../../common/app'
+import { APP_API, GetAppInfoParams } from '../../common/app'
 
 export function registerAppApi(ipcMain: IpcMain): void {
   ipcMain.handle(APP_API.GET_APP_INFO, async (_event, params: GetAppInfoParams) => {
@@ -24,29 +24,5 @@ export function registerAppApi(ipcMain: IpcMain): void {
     }
 
     return info
-  })
-
-  ipcMain.handle(APP_API.GREET_USER, async (_event, params: GreetUserParams) => {
-    const timeOfDay = params.timeOfDay || 'day'
-    let greeting: string
-
-    switch (timeOfDay) {
-      case 'morning':
-        greeting = `Good morning, ${params.name}! ☀️`
-        break
-      case 'afternoon':
-        greeting = `Good afternoon, ${params.name}! 🌤️`
-        break
-      case 'evening':
-        greeting = `Good evening, ${params.name}! 🌙`
-        break
-      default:
-        greeting = `Hello, ${params.name}! 👋`
-    }
-
-    return {
-      greeting,
-      timestamp: Date.now()
-    }
   })
 }

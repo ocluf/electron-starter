@@ -1,20 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import {
-  APP_API,
-  GetAppInfoParams,
-  GetAppInfoReturn,
-  GreetUserParams,
-  GreetUserReturn
-} from '../common/app'
+import { APP_API, GetAppInfoParams, GetAppInfoReturn } from '../common/app'
 import { UPDATER_API, UpdateStatus } from '../common/updater'
 
 // Custom APIs for renderer
 export const api = {
   app: {
     getAppInfo: (params: GetAppInfoParams): Promise<GetAppInfoReturn> =>
-      ipcRenderer.invoke(APP_API.GET_APP_INFO, params),
-    greetUser: (params: GreetUserParams): Promise<GreetUserReturn> =>
-      ipcRenderer.invoke(APP_API.GREET_USER, params)
+      ipcRenderer.invoke(APP_API.GET_APP_INFO, params)
   },
   updater: {
     checkForUpdates: (): Promise<void> => ipcRenderer.invoke(UPDATER_API.CHECK_FOR_UPDATES),
