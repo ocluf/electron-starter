@@ -352,11 +352,12 @@ async function main() {
 
   // Delete existing release if it exists (before creating tag)
   try {
-    run(`gh release view ${tag}`, { silent: true })
+    run(`gh release view ${tag}`, { silent: true, ignoreError: true })
     console.log(chalk.yellow(`⚠️  Deleting existing release ${tag}...`))
     run(`gh release delete ${tag} -y --cleanup-tag`)
   } catch {
     // Release doesn't exist, that's fine
+    console.log(chalk.cyan(`✓ Release ${tag} doesn't exist yet (good)`))
   }
 
   // Create and push tag (force push in case it exists remotely)
