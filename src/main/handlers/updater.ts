@@ -1,5 +1,5 @@
 import { autoUpdater } from 'electron-updater'
-import { IpcMain } from 'electron'
+import { IpcMain, BrowserWindow } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { UPDATER_API, UpdateStatus } from '../../common/updater'
 
@@ -10,9 +10,19 @@ class Updater {
   private status: UpdateStatus = { state: 'idle' }
   private checkInterval: NodeJS.Timeout | null = null
   private upToDateTimeout: NodeJS.Timeout | null = null
+  private mainWindow: BrowserWindow | null = null
 
-  constructor() {
+  constructor(mainWindow?: BrowserWindow) {
+    this.mainWindow = mainWindow || null
     this.init()
+  }
+
+  private setStatus(newStatus: UpdateStatus): void {
+    this.status = newStatus
+    // Notify renderer of status change
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      this.mainWindow.webContents.send(UPDATER_API.STATUS_CHANGED, newStatus)
+    }
   }
 
   private init(): void {
@@ -42,21 +52,21 @@ class Updater {
 
   private setupEvents(): void {
     autoUpdater.on('checking-for-update', () => {
-      this.status = { state: 'checking' }
+      this.setStatus({ state: 'checking' })
     })
 
     autoUpdater.on('update-available', (info) => {
-      this.status = {
+      this.setStatus({
         state: 'available',
         version: info.version
-      }
+      })
     })
 
     autoUpdater.on('update-not-available', (info) => {
-      this.status = {
+      this.setStatus({
         state: 'up-to-date',
         version: info.version
-      }
+      })
 
       // Reset to idle after 5 seconds
       if (this.upToDateTimeout) {
@@ -64,30 +74,30 @@ class Updater {
       }
       this.upToDateTimeout = setTimeout(() => {
         if (this.status.state === 'up-to-date') {
-          this.status = { state: 'idle' }
+          this.setStatus({ state: 'idle' })
         }
       }, 5000)
     })
 
     autoUpdater.on('error', (err) => {
-      this.status = {
+      this.setStatus({
         state: 'error',
         message: err.message
-      }
+      })
     })
 
     autoUpdater.on('download-progress', (progressObj) => {
-      this.status = {
+      this.setStatus({
         state: 'downloading',
         percent: Math.round(progressObj.percent)
-      }
+      })
     })
 
     autoUpdater.on('update-downloaded', (info) => {
-      this.status = {
+      this.setStatus({
         state: 'ready',
         version: info.version
-      }
+      })
     })
   }
 
@@ -111,10 +121,10 @@ class Updater {
       await autoUpdater.checkForUpdates()
     } catch (error) {
       console.error('Failed to check for updates:', error)
-      this.status = {
+      this.setStatus({
         state: 'error',
         message: error instanceof Error ? error.message : 'Unknown error'
-      }
+      })
     }
   }
 
@@ -140,8 +150,8 @@ class Updater {
   }
 }
 
-export function registerUpdaterApi(ipcMain: IpcMain): void {
-  const updater = new Updater()
+export function registerUpdaterApi(ipcMain: IpcMain, mainWindow: BrowserWindow): void {
+  const updater = new Updater(mainWindow)
 
   ipcMain.handle(UPDATER_API.CHECK_FOR_UPDATES, () => updater.checkForUpdates())
   ipcMain.handle(UPDATER_API.DOWNLOAD_UPDATE, () => updater.downloadUpdate())

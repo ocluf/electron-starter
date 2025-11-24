@@ -5,7 +5,7 @@ import icon from '../../resources/icon.png?asset'
 import { registerAppApi } from './handlers/app'
 import { registerUpdaterApi } from './handlers/updater'
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 900,
@@ -35,6 +35,8 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return mainWindow
 }
 
 // This method will be called when Electron has finished
@@ -53,9 +55,9 @@ app.whenReady().then(() => {
 
   // Register IPC APIs
   registerAppApi(ipcMain)
-  registerUpdaterApi(ipcMain)
 
-  createWindow()
+  const mainWindow = createWindow()
+  registerUpdaterApi(ipcMain, mainWindow)
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

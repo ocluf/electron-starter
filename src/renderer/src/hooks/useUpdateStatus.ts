@@ -1,15 +1,27 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
 import { UpdateStatus } from '../../../common/updater'
 
 /**
  * Hook to access the current update status.
- * Polls the main process every 5 seconds to check for update state changes.
+ * Listens to real-time status updates from the main process.
  */
 export const useUpdateStatus = (): UseQueryResult<UpdateStatus, Error> => {
-  return useQuery({
+  const queryClient = useQueryClient()
+
+  const query = useQuery({
     queryKey: ['updater-status'],
-    queryFn: (): Promise<UpdateStatus> => window.api.updater.getStatus(),
-    refetchInterval: 5000, // Poll every 5 seconds
-    staleTime: 0 // Always consider data stale so it refetches
+    queryFn: (): Promise<UpdateStatus> => window.api.updater.getStatus()
   })
+
+  useEffect(() => {
+    // Subscribe to status changes from main process
+    const unsubscribe = window.api.updater.onStatusChanged((status) => {
+      queryClient.setQueryData(['updater-status'], status)
+    })
+
+    return unsubscribe
+  }, [queryClient])
+
+  return query
 }

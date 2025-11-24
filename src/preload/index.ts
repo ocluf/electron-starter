@@ -12,7 +12,16 @@ export const api = {
     checkForUpdates: (): Promise<void> => ipcRenderer.invoke(UPDATER_API.CHECK_FOR_UPDATES),
     downloadUpdate: (): Promise<void> => ipcRenderer.invoke(UPDATER_API.DOWNLOAD_UPDATE),
     installUpdate: (): Promise<void> => ipcRenderer.invoke(UPDATER_API.INSTALL_UPDATE),
-    getStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke(UPDATER_API.GET_UPDATE_STATUS)
+    getStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke(UPDATER_API.GET_UPDATE_STATUS),
+    onStatusChanged: (callback: (status: UpdateStatus) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, status: UpdateStatus): void => {
+        callback(status)
+      }
+      ipcRenderer.on(UPDATER_API.STATUS_CHANGED, listener)
+      return (): void => {
+        ipcRenderer.removeListener(UPDATER_API.STATUS_CHANGED, listener)
+      }
+    }
   }
 }
 
